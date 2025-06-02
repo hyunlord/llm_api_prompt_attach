@@ -4,7 +4,7 @@ import openai
 
 from util import fetch_image_for_pil, fetch_image_for_base64
 from read_api_key import read_api_key
-from image_api import image_api_origin, image_api_test
+from image_api import image_api
 
 
 def get_image_relevance_scores(query: str, image_urls: list[str], api_key: str, model_name: str) -> dict:
@@ -51,7 +51,7 @@ def get_image_relevance_scores(query: str, image_urls: list[str], api_key: str, 
         return {"scores": results_scores, "usage_metadata": None}
 
     num_valid_images = len(valid_image_urls)
-    print(f"{num_valid_images}개의 PIL 이미지를 API({model_name})로 전송합니다.")
+    print(f"{num_valid_images}개의 이미지를 API({model_name})로 전송합니다.")
 
     prompt_text = f"""당신은 이미지 분석가로서 다음 검색 쿼리와 **앞서 제공된 {num_valid_images}개의 이미지들** 각각의 관련성을 매우 신중하고 비판적으로 평가해야 합니다.
     검색 쿼리: "{query}"
@@ -139,20 +139,6 @@ def get_image_relevance_scores(query: str, image_urls: list[str], api_key: str, 
                 results_scores[url] = f"Error: Non-numeric AI response ('{score_strings[i]}')"
             except IndexError:
                 results_scores[url] = "Error: Missing score from AI"
-    except genai.types.generation_types.StopCandidateException as e:
-        print(f"오류: API 응답 생성 중단됨 (콘텐츠 필터링 가능성): {e}")
-        for url in valid_image_urls:
-            if url not in results_scores:
-                 results_scores[url] = f"Error: Response generation stopped ({type(e).__name__})"
-        if hasattr(e, 'response') and hasattr(e.response, 'usage_metadata'):
-            api_usage_info = {
-                "prompt_token_count": e.response.usage_metadata.prompt_token_count,
-                "candidates_token_count": e.response.usage_metadata.candidates_token_count,
-                "total_token_count": e.response.usage_metadata.total_token_count,
-            }
-            print(f"API 토큰 사용량 (중단 시): {api_usage_info}")
-        else:
-            print("토큰 사용량 정보를 가져올 수 없습니다 (중단 시).")
     except Exception as e:
         print(f"오류: API 호출 중 문제 발생 ({model_name}): {e}")
         for url in valid_image_urls:
@@ -172,8 +158,8 @@ if __name__ == '__main__':
     query = input()
     count = int(input())
     print(query, count)
-    image_urls_origin = image_api_origin(query, count)
-    #image_urls_test = image_api_test(query, count)
+    image_urls_origin = image_api(query, count, 'origin')
+    #image_urls_test = image_api_test(query, count, 'test')
     gemini_api_key, openai_api_key, claude_api_key = read_api_key()
 
     result_gemini = get_image_relevance_scores(query, image_urls_origin, gemini_api_key, "gemini-2.0-flash-lite-001")
