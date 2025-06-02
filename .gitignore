@@ -130,3 +130,5 @@ dmypy.json
 
 .idea
 data/*
+read_api_key.py
+image_api.py
